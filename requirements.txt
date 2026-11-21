@@ -1,0 +1,15 @@
+streamlit>=1.40.0
+google-genai>=1.0.0,<3.0.0
+python-dotenv>=1.0.0
+edge-tts
+moviepy==1.0.3
+requests
+Pillow
+numpy
+gradio_client
+pypdf
+duckduckgo-search
+youtube-transcript-api
+gTTS
+streamlit-mic-recorder
+razorpay
