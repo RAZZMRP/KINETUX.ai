@@ -174,7 +174,52 @@ def record_subscription_split(amount_inr, plan_name, user_email):
 
 users_db = load_users()
 
-# REAL GOOGLE OAUTH CALLBACK (Fetches Actual Gmail, Name & Profile Photo)
+# ==========================================
+# EARLY ACCESS CLOSED BETA CAP (750 INDIA + 250 UK = 1000 TOTAL)
+# ==========================================
+MAX_IN_USERS = 750
+MAX_UK_USERS = 250
+
+def get_region_user_counts():
+    in_count = 0
+    uk_count = 0
+    for em, info in users_db.items():
+        reg = info.get("region", "IN").upper()
+        if reg in ["GB", "UK"]:
+            uk_count += 1
+        else:
+            in_count += 1
+    return in_count, uk_count
+
+def can_register_new_user(region_code):
+    if st.session_state.dev_mode:
+        return True, "OK"
+    in_c, uk_c = get_region_user_counts()
+    if region_code in ["GB", "UK"]:
+        if uk_c >= MAX_UK_USERS:
+            return False, f"🇬🇧 **UK Early Access Batch Full ({MAX_UK_USERS}/{MAX_UK_USERS} Creators Joined)!** Next batch opening soon."
+    else:
+        if in_c >= MAX_IN_USERS:
+            return False, f"🇮🇳 **India Early Access Batch Full ({MAX_IN_USERS}/{MAX_IN_USERS} Creators Joined)!** Next batch opening soon."
+    return True, "OK"
+
+# Detect real visitor region via request headers (avoids blocking on US cloud servers)
+def get_real_visitor_region():
+    try:
+        headers = st.context.headers if hasattr(st, "context") else {}
+        cf_country = headers.get("Cf-Ipcountry", "").upper()
+        if cf_country in ["GB", "UK"]:
+            return "United Kingdom", "GB"
+        if cf_country == "IN":
+            return "India", "IN"
+    except Exception:
+        pass
+    return "India (IN & UK Global)", "IN"
+
+user_loc, country_code = get_real_visitor_region()
+is_uk_user = country_code in ["GB", "UK"]
+
+# REAL GOOGLE OAUTH CALLBACK (Fetches Actual Gmail, Name & Profile Photo + Enforces 1000 Cap)
 if "code" in st.query_params and st.session_state.google_client_id and st.session_state.google_client_secret:
     auth_code = st.query_params["code"]
     if auth_code and not st.session_state.current_user:
@@ -203,9 +248,15 @@ if "code" in st.query_params and st.session_state.google_client_id and st.sessio
                 pic_url = u_info.get("picture", "")
                 if em_oauth:
                     if em_oauth not in users_db:
+                        allowed_reg, reg_msg = can_register_new_user(country_code)
+                        if not allowed_reg:
+                            st.error(reg_msg)
+                            st.query_params.clear()
+                            st.stop()
                         users_db[em_oauth] = {
                             "name": real_name,
                             "picture": pic_url,
+                            "region": country_code,
                             "provider": "Google",
                             "plan": "free",
                             "credits": 6,
@@ -233,22 +284,6 @@ def get_active_user():
         "credits": st.session_state.guest_credits,
         "videos_created": st.session_state.guest_free_videos
     }
-
-# Detect real visitor region via request headers (avoids blocking on US cloud servers)
-def get_real_visitor_region():
-    try:
-        headers = st.context.headers if hasattr(st, "context") else {}
-        cf_country = headers.get("Cf-Ipcountry", "").upper()
-        if cf_country in ["GB", "UK"]:
-            return "United Kingdom", "GB"
-        if cf_country == "IN":
-            return "India", "IN"
-    except Exception:
-        pass
-    return "India (IN & UK Global)", "IN"
-
-user_loc, country_code = get_real_visitor_region()
-is_uk_user = country_code in ["GB", "UK"]
 
 starter_price_label = "£6.99 / month" if is_uk_user else "₹99 / month"
 pro_price_label = "£19.99 / month" if is_uk_user else "₹499 / month"
@@ -948,7 +983,7 @@ with st.sidebar:
             st.session_state.dev_mode = st.toggle("Developer Mode (Unlimited)", value=st.session_state.dev_mode)
             st.markdown(f"<small style='color:{sub_text};'>📍 {user_loc}</small>", unsafe_allow_html=True)
 
-    # REAL GOOGLE ACCOUNT SWITCHER & LOGIN POPOVER
+    # REAL GOOGLE ACCOUNT SWITCHER & LOGIN POPOVER (WITH 1000-USER BETA LIMIT)
     if st.session_state.show_account_switcher:
         with st.container(border=True):
             if curr_email:
@@ -959,7 +994,9 @@ with st.sidebar:
                     st.session_state.show_account_switcher = False
                     st.rerun()
             else:
+                in_c, uk_c = get_region_user_counts()
                 st.markdown("**Sign in to KINETUX Ai**")
+                st.caption(f"Early Access Seats: 🇮🇳 {in_c}/{MAX_IN_USERS} · 🇬🇧 {uk_c}/{MAX_UK_USERS}")
                 if st.session_state.google_client_id and st.session_state.google_client_secret:
                     redir = urllib.parse.quote(st.session_state.app_base_url.rstrip("/"), safe="")
                     g_oauth_url = (
@@ -979,7 +1016,11 @@ with st.sidebar:
                     if st.button("G   Quick Demo Login", use_container_width=True):
                         em_g = "demo.creator@gmail.com"
                         if em_g not in users_db:
-                            users_db[em_g] = {"name": "Rajveer Purohit", "provider": "Google", "plan": "free", "credits": 6, "videos_created": 0}
+                            allowed_reg, reg_msg = can_register_new_user(country_code)
+                            if not allowed_reg:
+                                st.error(reg_msg)
+                                st.stop()
+                            users_db[em_g] = {"name": "Rajveer Purohit", "region": country_code, "provider": "Google", "plan": "free", "credits": 6, "videos_created": 0}
                             save_users(users_db)
                         st.session_state.current_user = em_g
                         st.session_state.show_account_switcher = False
@@ -988,7 +1029,11 @@ with st.sidebar:
                 if st.button("   Continue with Apple / iCloud", use_container_width=True):
                     em_a = "creator.apple@icloud.com"
                     if em_a not in users_db:
-                        users_db[em_a] = {"name": "Apple Creator", "provider": "Apple iCloud", "plan": "free", "credits": 6, "videos_created": 0}
+                        allowed_reg, reg_msg = can_register_new_user(country_code)
+                        if not allowed_reg:
+                            st.error(reg_msg)
+                            st.stop()
+                        users_db[em_a] = {"name": "Apple Creator", "region": country_code, "provider": "Apple iCloud", "plan": "free", "credits": 6, "videos_created": 0}
                         save_users(users_db)
                     st.session_state.current_user = em_a
                     st.session_state.show_account_switcher = False
@@ -1909,6 +1954,8 @@ elif tab == "Settings_Sub":
 
     with st.container(border=True):
         st.subheader("2. 👑 Owner Revenue & User Analytics Panel")
+        in_used, uk_used = get_region_user_counts()
+        st.info(f"🎟️ **Early Access Beta Capacity:** &nbsp; 🇮🇳 India: **{in_used} / {MAX_IN_USERS}** seats &nbsp;|&nbsp; 🇬🇧 UK: **{uk_used} / {MAX_UK_USERS}** seats &nbsp;|&nbsp; Total: **{in_used + uk_used} / {MAX_IN_USERS + MAX_UK_USERS}**")
         ledger = load_ledger()
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Total Registered Users", f"{len(users_db)}")
