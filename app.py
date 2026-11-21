@@ -234,34 +234,26 @@ def get_active_user():
         "videos_created": st.session_state.guest_free_videos
     }
 
-@st.cache_data(ttl=3600)
-def get_ip_location():
+# Detect real visitor region via request headers (avoids blocking on US cloud servers)
+def get_real_visitor_region():
     try:
-        r = requests.get("https://ipapi.co/json/", timeout=3).json()
-        cc = r.get("country_code", "IN").upper()
-        return r.get("ip", "127.0.0.1"), f"{r.get('city', 'India')}, {r.get('country_name', 'IN')}", cc
+        headers = st.context.headers if hasattr(st, "context") else {}
+        cf_country = headers.get("Cf-Ipcountry", "").upper()
+        if cf_country in ["GB", "UK"]:
+            return "United Kingdom", "GB"
+        if cf_country == "IN":
+            return "India", "IN"
     except Exception:
-        return "127.0.0.1", "India", "IN"
+        pass
+    return "India (IN & UK Global)", "IN"
 
-user_ip, user_loc, country_code = get_ip_location()
+user_loc, country_code = get_real_visitor_region()
 is_uk_user = country_code in ["GB", "UK"]
 
 starter_price_label = "£6.99 / month" if is_uk_user else "₹99 / month"
 pro_price_label = "£19.99 / month" if is_uk_user else "₹499 / month"
 starter_btn_label = "Upgrade Starter (£6.99 · +30 Cr)" if is_uk_user else "Upgrade Starter (₹99 · +30 Cr)"
 pro_btn_label = "Upgrade Studio Pro (£19.99 · +120 Cr)" if is_uk_user else "Upgrade Studio Pro (₹499 · +120 Cr)"
-
-if country_code not in ["IN", "GB", "UK"] and not st.session_state.dev_mode:
-    st.markdown("""
-    <div style="text-align:center; padding:90px 20px; color:#E3E3E3; font-family:Inter, sans-serif;">
-        <h1 style="font-size:34px; font-weight:500;">✦ KINETUX Ai</h1>
-        <p style="font-size:18px; color:#9AA0A6; margin-top:12px;">
-            KINETUX Ai is currently available exclusively in <b>India 🇮🇳</b> and the <b>United Kingdom 🇬🇧</b>.
-        </p>
-        <p style="font-size:13px; color:#64748B;">Detected Region: """ + user_loc + """</p>
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
 
 def consume_cartoon_quota(is_long_movie=False):
     em, u = get_active_user()
@@ -1872,10 +1864,10 @@ elif tab == "Legal_Refund":
 elif tab == "Legal_Contact":
     st.title("📞 Contact Us — KINETUX Ai")
     st.markdown("""
-    - **Platform:** KINETUX Ai
-    - **Founder:** Rajveer Purohit
-    - **Support Email:** support@kinetux.ai
-    - **Operating Region:** India & United Kingdom
+- **Platform:** KINETUX Ai
+- **Founder:** Rajveer Purohit
+- **Support Email:** support@kinetux.ai
+- **Operating Region:** India & United Kingdom
     """)
 
 elif tab == "Settings_Sub":
