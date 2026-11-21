@@ -58,7 +58,7 @@ st.set_page_config(
     page_title="KINETUX Ai — Cartoon & AI Studio",
     page_icon="✦",
     layout="wide",
-    initial_sidebar_state="auto"
+    initial_sidebar_state="expanded"
 )
 
 # ==========================================
@@ -407,6 +407,15 @@ st.markdown(f"""
     header[data-testid="stHeader"] {{ background: transparent !important; }}
     #MainMenu, footer {{ visibility: hidden !important; }}
 
+    /* Hide Streamlit Top Toolbar (Share, Star, Pencil, GitHub icons) */
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"],
+    .stDeployButton {{
+        display: none !important;
+        visibility: hidden !important;
+    }}
+
     .stApp {{
         background: {main_bg} !important;
         color: {text_color} !important;
@@ -421,6 +430,21 @@ st.markdown(f"""
     [data-testid="stSidebar"] > div:first-child {{
         padding: 0.75rem 0.6rem 72px 0.6rem !important;
     }}
+
+    /* Keep Sidebar Fixed & Visible on Desktop / Desktop Mode */
+    @media (min-width: 769px) {{
+        [data-testid="stSidebar"] {{
+            transform: none !important;
+            visibility: visible !important;
+            position: relative !important;
+            min-width: 255px !important;
+            max-width: 255px !important;
+        }}
+        [data-testid="collapsedControl"] {{
+            display: none !important;
+        }}
+    }}
+
     [data-testid="stSidebar"] [data-testid="stButton"] > button,
     [data-testid="stSidebar"] button {{
         background-color: transparent !important;
@@ -445,9 +469,6 @@ st.markdown(f"""
     [data-testid="stSidebar"] button:hover {{
         background-color: {hover_bg} !important;
     }}
-    if (t === "SB_NEWCHAT" && activeTab === "New chat") {{
-    btn.setAttribute("data-active-pill", "1");
-}}
 
     [data-testid="stSidebar"] button[data-big-icon="1"] {{
         width: 38px !important;
@@ -482,6 +503,27 @@ st.markdown(f"""
     }}
 
     {dock_css}
+
+    /* Keep Input Capsule in ONE Single Horizontal Pill on Mobile & Desktop (Like Gemini) */
+    [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) {{
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 6px !important;
+        border-radius: 36px !important;
+        padding: 4px 12px !important;
+    }}
+    [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) > div {{
+        width: auto !important;
+        min-width: 0 !important;
+    }}
+    [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) > div:nth-child(2) {{
+        flex: 1 1 auto !important;
+    }}
+    [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) > div:nth-child(3) {{
+        flex: 0 0 118px !important;
+    }}
 
     [data-testid="InputInstructions"] {{
         display: none !important;
@@ -523,7 +565,7 @@ st.markdown(f"""
     [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) [data-baseweb="select"] span,
     [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) [data-baseweb="select"] div {{
         color: #E3E3E3 !important;
-        font-size: 13.5px !important;
+        font-size: 13px !important;
         font-weight: 500 !important;
     }}
     [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) [data-baseweb="select"] svg {{
@@ -818,9 +860,6 @@ setInterval(() => {{
             btn.innerHTML = exactIcons[t];
             if (t === "BIG_PLUS") {{
                 btn.dataset.isPlusBtn = "1";
-            }}
-            if (t === "SB_NEWCHAT" && activeTab === "New chat") {{
-                btn.setAttribute("data-active-pill", "1");
             }}
             if (t === "SB_SEARCH" || t === "SB_GEAR") {{
                 btn.setAttribute("data-big-icon", "1");
