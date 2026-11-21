@@ -348,7 +348,7 @@ def handle_enter_submit():
         st.session_state.pending_query = txt
 
 # ==========================================
-# 3. RESPONSIVE CSS (ANDROID / iOS / WINDOWS / MAC)
+# 3. RESPONSIVE CSS (GEMINI MOBILE + DESKTOP FIXED SIDEBAR)
 # ==========================================
 is_light = st.session_state.theme_mode == "Light"
 main_bg = "#F8FAFC" if is_light else "radial-gradient(circle at 55% 42%, #0D3B7A 0%, #091B3A 48%, #070E1D 100%)"
@@ -374,13 +374,6 @@ dock_css = f"""
         padding: 4px 16px !important;
         box-shadow: 0 12px 35px rgba(0, 0, 0, 0.78) !important;
         align-items: center !important;
-    }}
-    @media (max-width: 768px) {{
-        [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) {{
-            left: 12px !important;
-            right: 12px !important;
-            bottom: 14px !important;
-        }}
     }}
     .block-container {{
         padding-bottom: 155px !important;
@@ -504,25 +497,66 @@ st.markdown(f"""
 
     {dock_css}
 
-    /* Keep Input Capsule in ONE Single Horizontal Pill on Mobile & Desktop (Like Gemini) */
+    /* Keep Input Capsule in ONE Single Horizontal Pill without overlapping */
     [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) {{
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         align-items: center !important;
-        gap: 6px !important;
+        gap: 8px !important;
         border-radius: 36px !important;
-        padding: 4px 12px !important;
+        padding: 4px 14px !important;
     }}
-    [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) > div {{
-        width: auto !important;
-        min-width: 0 !important;
+    [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) > div:nth-child(1) {{
+        flex: 0 0 36px !important;
+        width: 36px !important;
+        min-width: 36px !important;
     }}
     [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) > div:nth-child(2) {{
         flex: 1 1 auto !important;
+        min-width: 90px !important;
     }}
     [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) > div:nth-child(3) {{
-        flex: 0 0 118px !important;
+        flex: 0 0 112px !important;
+        width: 112px !important;
+        min-width: 112px !important;
+    }}
+    [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) > div:nth-child(4) {{
+        flex: 0 0 36px !important;
+        width: 36px !important;
+        min-width: 36px !important;
+    }}
+
+    /* Mobile Screen: Gemini-like Bottom Docked Pill & Clean Layout */
+    @media (max-width: 768px) {{
+        [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) {{
+            position: fixed !important;
+            bottom: 14px !important;
+            left: 12px !important;
+            right: 12px !important;
+            max-width: none !important;
+            margin: 0 !important;
+            z-index: 9999 !important;
+            background-color: {capsule_bg} !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85) !important;
+        }}
+        [data-testid="collapsedControl"] {{
+            display: flex !important;
+            visibility: visible !important;
+            color: #E3E3E3 !important;
+        }}
+        /* Hide bulky dropdown on narrow mobile pill so + and Ask Kinetux never overlap */
+        [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) > div:nth-child(3) {{
+            display: none !important;
+        }}
+        .block-container {{
+            padding-top: 1.8rem !important;
+            padding-bottom: 115px !important;
+        }}
+        .ktx-desktop-spacer {{
+            display: none !important;
+        }}
     }}
 
     [data-testid="InputInstructions"] {{
@@ -556,7 +590,7 @@ st.markdown(f"""
 
     [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) input {{
         font-size: 15.5px !important;
-        padding-left: 2px !important;
+        padding-left: 4px !important;
     }}
     [data-testid="stHorizontalBlock"]:not(:has([data-testid="stHorizontalBlock"])):has(input[aria-label="Ask Kinetux"]) input::placeholder {{
         color: #9AA0A6 !important;
@@ -1555,8 +1589,22 @@ if tab == "New chat":
     _, center_col, _ = st.columns([1.1, 2.8, 1.1])
     with center_col:
         if not has_messages:
-            st.markdown("<div style='height:135px;'></div>", unsafe_allow_html=True)
-            st.markdown("<h1 style='text-align:center; font-size:38px; font-weight:400; letter-spacing:-0.4px; margin-bottom:28px; color:#FFFFFF;'>Where should we start?</h1>", unsafe_allow_html=True)
+            st.markdown("<div class='ktx-desktop-spacer' style='height:95px;'></div>", unsafe_allow_html=True)
+            st.markdown("""
+            <div style="text-align:center; margin-top:24px; margin-bottom:10px;">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                    <defs>
+                        <linearGradient id="ktxSparkle" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#4285F4"/>
+                            <stop offset="50%" stop-color="#9B72CB"/>
+                            <stop offset="100%" stop-color="#D96570"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M12 2C12.5 7.5 16.5 11.5 22 12C16.5 12.5 12.5 16.5 12 22C11.5 16.5 7.5 12.5 2 12C7.5 11.5 11.5 7.5 12 2Z" fill="url(#ktxSparkle)"/>
+                </svg>
+            </div>
+            <h1 style='text-align:center; font-size:32px; font-weight:400; letter-spacing:-0.4px; margin-bottom:24px; color:#FFFFFF;'>Where should we start?</h1>
+            """, unsafe_allow_html=True)
         else:
             for idx, msg in enumerate(chat_messages):
                 if msg["role"] == "user":
