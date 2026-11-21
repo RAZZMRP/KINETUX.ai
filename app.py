@@ -445,10 +445,9 @@ st.markdown(f"""
     [data-testid="stSidebar"] button:hover {{
         background-color: {hover_bg} !important;
     }}
-    [data-testid="stSidebar"] button[data-active-pill="1"] {{
-        background-color: rgba(255, 255, 255, 0.08) !important;
-        font-weight: 500 !important;
-    }}
+    if (t === "SB_NEWCHAT" && activeTab === "New chat") {{
+    btn.setAttribute("data-active-pill", "1");
+}}
 
     [data-testid="stSidebar"] button[data-big-icon="1"] {{
         width: 38px !important;
